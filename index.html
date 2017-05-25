@@ -3,5 +3,24 @@
 	<title>It's a Title!</title>
 	<body>
 		<p>Hello world!</p>
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<!-- Compiled and minified JavaScript -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.1/js/materialize.min.js"></script>
+		<script>
+			$.ajax({
+				url: 'test',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				dataType: 'json',
+				async: false,
+				success: function (msg) {
+					$("#comments").modal('close');
+				},
+				error: function(err){
+					alert("Not your comment!");
+				}
+			});
+		
+		</script>
 	</body>
 </html>

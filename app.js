@@ -22,22 +22,23 @@ app.post('/test', function(req, res) {
 	pool = new sql.ConnectionPool({
 		user: 'ryan',
 		password: 'cop4935l!t',
-		server: 'tcp:flockit.database.windows.net',
-		database: 'flockit'
+		server: 'flockit.database.windows.net',
+		database: 'flockit',
+		options: {
+			encrypt: true
+		}
 	});
 
 	pool.connect(function(err) {
 		console.log(err + ' Couldn\'t connect!');
+		request = new sql.Request(pool);
+		request.query('select * from [dbo].[User]', function(err, result) {
+			console.log(result);
+			res.json({});
+		});
+
+		pool.close();
 	});
-
-	request = new sql.Request(pool);
-	request.query('select 1 as number', function(err, result) {
-		console.log(result.recordset[0].number);
-	});
-
-	pool.close();
-
-	res.json({});
 });
 
 var port = process.env.PORT || 1337;
