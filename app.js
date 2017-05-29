@@ -3,9 +3,19 @@ var path = require('path');
 var favicon = require('serve-favicon');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var sql = require('mssql');
+var tedious = require('tedious');
 
 var app = express();
+var dbConfig = {
+	userName: 'ryan',
+	password: 'cop4935l!t',
+	server: 'flockit.database.windows.net',
+	options: {
+		database: 'flockit',
+		encrypt: true,
+		rowCollectionOnRequestCompletion: true
+	}
+}
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -19,25 +29,19 @@ app.get('/', function(req, res) {
 });
 
 app.post('/test', function(req, res) {
-	pool = new sql.ConnectionPool({
-		user: 'ryan',
-		password: 'cop4935l!t',
-		server: 'flockit.database.windows.net',
-		database: 'flockit',
-		options: {
-			encrypt: true
-		}
+	var connection = new tedious.Connection(dbConfig);
+	var request = new tedious.Request('SELECT * FROM [dbo].[User]', function(err, rowCount, rows) {
+		console.log(rows);
+		res.json(rows[0][0].value);
 	});
-
-	pool.connect(function(err) {
-		console.log(err + ' Couldn\'t connect!');
-		request = new sql.Request(pool);
-		request.query('select * from [dbo].[User]', function(err, result) {
-			console.log(result);
+	
+	connection.on('connect', function(err) {
+		if(err) {
+			console.log(err);
 			res.json({});
-		});
-
-		pool.close();
+		} else {
+			connection.execSql(request);
+		}
 	});
 });
 
