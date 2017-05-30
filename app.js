@@ -61,7 +61,7 @@ app.get('/login', function(req, res) {
 	res.sendFile(__dirname + '/login.html');
 });
 
-app.post('/poop', function(req, res) {
+app.post('/signup', function(req, res) {
 	console.log(JSON.stringify(req.body));
 	var ret = {};
 	ret.error = null;
