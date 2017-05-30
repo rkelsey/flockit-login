@@ -52,7 +52,10 @@
 					dataType: 'json',
 					async: false,
 					success: function (msg) {
-						alert(msg.err);
+						if(!msg.err)
+							alert("You successfully logged in :)");
+						else
+							alert(msg.err);
 					},
 					error: function(err){
 						alert("COMPLETE FAILRUE");

@@ -73,8 +73,6 @@
 				data.last = last;
 				data.email = email;
 				
-				alert("made it here");
-				
 				$.ajax({
 					url: 'signup',
 					type: 'POST',
@@ -83,7 +81,10 @@
 					dataType: 'json',
 					async: false,
 					success: function (msg) {
-						alert(msg.err);
+						if(!msg.err)
+							alert("You successfully signed up :)");
+						else
+							alert(msg.err);
 					},
 					error: function(err){
 						alert("COMPLETE FAILRUE");
