@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			.button {
+				background-color: #4CAF50;
+				border: none;
+				color: white;
+				padding: 15px 32px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+			}
+		</style>
+	</head>
+	<title>Sign Up</title>
+	<body>
+		<input id="username" type="text"/>
+		<label for="username">Username</label>
+		<br>
+		<input id="password" type="password"/>
+		<label for="password">Password</label>
+		<br>
+		<input id="confirm" type="password"/>
+		<label for="confirm">Confirm Password</label>
+		<br>
+		<input id="first" type="text"/>
+		<label for="first">First Name</label>
+		<br>
+		<input id="last" type="text"/>
+		<label for="last">Last Name</label>
+		<br>
+		<input id="email" type="text"/>
+		<label for="email">Email Address</label>
+		<br>
+		
+		<input type="button" class = "button" value="Register" onclick="execute()"/>
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<!-- Compiled and minified JavaScript -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.1/js/materialize.min.js"></script>
+		<script>
+			function execute() {
+				var user = $("#username").val();
+				var pass = $("#password").val();
+				var confirm = $("#confirm").val();
+				var first = $("#first").val();
+				var last = $("#last").val();
+				var email = $("#email").val();
+				
+				var arr = [user, pass, confirm, first, last, email];
+				if(anyEmpty(arr)) {
+					alert("All fields must be filled in!");
+					return;
+				}
+				
+				if(pass !== confirm) {
+					alert("Passwords don't match!");
+					return;
+				}
+				
+				if(!validEmail(email)) {
+					alert("Invalid email address!");
+					return;
+				}
+				
+				var data = {};
+				data.username = user;
+				data.password = pass;
+				data.first = first;
+				data.last = last;
+				data.email = email;
+				
+				alert("made it here");
+				
+				$.ajax({
+					url: 'poop',
+					type: 'POST',
+					data: JSON.stringify(data),
+					contentType: 'application/json; charset=utf-8',
+					dataType: 'json',
+					async: false,
+					success: function (msg) {
+						alert(msg.err);
+					},
+					error: function(err){
+						alert("COMPLETE FAILRUE");
+					}
+				});
+			}
+			
+			function anyEmpty(arr) {
+				console.log(arr);
+				for(var i = 0; i < arr.length; i++) {
+					console.log(arr[i]);
+					if(!arr[i] || arr[i] === "")
+						return true;
+				}
+				return false;
+			}
+			
+			function validEmail(email) {
+				var atCount = 0;
+				for(var i = 0; i < email.length; i++)
+					if(email[i] === '@')
+						atCount++;
+						
+				return atCount === 1 && email[0] !== '@' && email[email.length - 1] !== '@';
+			}
+			
+		</script>
+	</body>
+</html>
