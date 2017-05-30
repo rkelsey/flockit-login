@@ -8,11 +8,11 @@ var session = require('client-sessions');
 
 var app = express();
 var dbConfig = {
-	userName: 'ryan',
-	password: 'cop4935l!t',
-	server: 'flockit.database.windows.net',
+	userName: process.env.DB_ADMIN,
+	password: process.env.DB_PW,
+	server: process.env.DB_SERVER,
 	options: {
-		database: 'flockit',
+		database: process.env.DB_NAME,
 		encrypt: true,
 		rowCollectionOnRequestCompletion: true
 	}
