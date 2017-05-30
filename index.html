@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<style>
-			.button {
+			a.button {
 				background-color: #4CAF50;
 				border: none;
 				color: white;
@@ -16,29 +16,11 @@
 			}
 		</style>
 	</head>
-	<title>It's a Title!</title>
+	<title>Flockit</title>
 	<body>
-		<p>Hello world!</p>
-		<input type="button" class = "button" value="Execute SELECT on User table" onclick="execute()"/>
-		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
-		<!-- Compiled and minified JavaScript -->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.1/js/materialize.min.js"></script>
-		<script>
-			function execute() {
-				$.ajax({
-					url: 'test',
-					type: 'POST',
-					contentType: 'application/json; charset=utf-8',
-					dataType: 'json',
-					async: false,
-					success: function (msg) {
-						alert(msg);
-					},
-					error: function(err){
-						alert("COMPLETE FAILRUE");
-					}
-				});
-			};
-		</script>
+		<p>Flockit!</p>
+		<a href="/signup" class="button">Signup</a>
+		<br>
+		<a href="/login" class="button">Login</a>
 	</body>
 </html>
