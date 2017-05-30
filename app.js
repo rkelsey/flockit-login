@@ -4,6 +4,7 @@ var favicon = require('serve-favicon');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var tedious = require('tedious');
+var session = require('client-sessions');
 
 var app = express();
 var dbConfig = {
@@ -31,6 +32,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(__dirname));
+app.use(session({
+	cookieName: 'session',
+	secret: 'asdfasdfasf',
+	duration: 2147483647,
+	activeDuration: 2147483647
+}));
 
 app.get('/', function(req, res) {
 	res.sendFile('index.html');
@@ -48,6 +55,10 @@ app.post('/test', function(req, res) {
 
 app.get('/signup', function(req, res) {
 	res.sendFile(__dirname + '/signup.html');
+});
+
+app.get('/login', function(req, res) {
+	res.sendFile(__dirname + '/login.html');
 });
 
 app.post('/poop', function(req, res) {
@@ -98,6 +109,27 @@ app.post('/poop', function(req, res) {
 	
 	checkUsername.addParameter('user', TYPES.VarChar, req.body.username);
 	connection.execSql(checkUsername);
+});
+
+app.post('/login', function(req, res) {
+	console.log(req.session.user);
+	var TYPES = tedious.TYPES;
+	
+	var checkExists = new tedious.Request('SELECT * FROM [dbo].[User] WHERE username = @user AND passwordHash = @pass', function(err, rowCount, rows) {
+		if(err)
+			throw err;
+		
+		if(rowCount !== 1) {
+			res.json({err: 'Invalid username or password'});
+		} else {
+			req.session.user = rows[0][0].value;
+			res.json({err: null});
+		}
+	});
+	
+	checkExists.addParameter('user', TYPES.VarChar, req.body.username);
+	checkExists.addParameter('pass', TYPES.VarChar, req.body.password);
+	connection.execSql(checkExists);
 });
 
 var port = process.env.PORT || 1337;
