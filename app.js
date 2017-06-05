@@ -46,10 +46,6 @@ app.get('/', function(req, res) {
 	res.sendFile(__dirname + '/index.html');
 });
 
-app.get('/app.js', function(req, res) {
-	res.sendFile(__dirname + '/index.html');
-});
-
 app.post('/test', function(req, res) {
 	//var connection = new tedious.Connection(dbConfig);
 	var request = new tedious.Request('SELECT * FROM [dbo].[User]', function(err, rowCount, rows) {
@@ -61,11 +57,11 @@ app.post('/test', function(req, res) {
 });
 
 app.get('/signup', function(req, res) {
-	res.sendFile(__dirname + '/signup.html');
+	res.sendFile(__dirname + '/public/signup.html');
 });
 
 app.get('/login', function(req, res) {
-	res.sendFile(__dirname + '/login.html');
+	res.sendFile(__dirname + '/public/login.html');
 });
 
 app.post('/signup', function(req, res) {
