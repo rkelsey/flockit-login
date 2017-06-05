@@ -40,8 +40,6 @@ app.use(session({
 	activeDuration: 2147483647
 }));
 
-const saltRounds = 10;
-
 app.get('/', function(req, res) {
 	res.sendFile(__dirname + '/index.html');
 });
@@ -101,7 +99,7 @@ app.post('/signup', function(req, res) {
 					});
 					
 					insert.addParameter('user', TYPES.VarChar, req.body.username);
-					insert.addParameter('pass', TYPES.VarChar, encryption.hashSync(req.body.password, saltRounds));
+					insert.addParameter('pass', TYPES.VarChar, req.body.password);
 					insert.addParameter('email', TYPES.VarChar, req.body.email);
 					insert.addParameter('first', TYPES.VarChar, req.body.first);
 					insert.addParameter('last', TYPES.VarChar, req.body.last);
@@ -122,25 +120,20 @@ app.post('/login', function(req, res) {
 	console.log(req.session.user);
 	var TYPES = tedious.TYPES;
 	
-	var checkExists = new tedious.Request('SELECT Id, PasswordHash FROM [dbo].[User] WHERE username = @user', function(err, rowCount, rows) {
+	var checkExists = new tedious.Request('SELECT * FROM [dbo].[User] WHERE username = @user AND passwordHash = @pass', function(err, rowCount, rows) {
 		if(err)
 			throw err;
 		
 		if(rowCount !== 1) {
-			res.json({err: 'Invalid username'});
+			res.json({err: 'Invalid username or password'});
 		} else {
-			console.log(JSON.stringify(rows));
-			var hashedPass = rows[0][1].value;
-			if(!encryption.compareSync(req.body.password, hashedPass)) {
-				res.json({err: 'Invalid password'});
-				return;
-			}
 			req.session.user = rows[0][0].value;
 			res.json({err: null});
 		}
 	});
 	
 	checkExists.addParameter('user', TYPES.VarChar, req.body.username);
+	checkExists.addParameter('pass', TYPES.VarChar, req.body.password);
 	connection.execSql(checkExists);
 });
 
