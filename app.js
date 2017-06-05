@@ -5,7 +5,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var tedious = require('tedious');
 var session = require('client-sessions');
-var encryption = require('bcrypt');
+var hashing = require('bcrypt');
 
 var app = express();
 var dbConfig = {
@@ -101,7 +101,7 @@ app.post('/signup', function(req, res) {
 					});
 					
 					insert.addParameter('user', TYPES.VarChar, req.body.username);
-					insert.addParameter('pass', TYPES.VarChar, encryption.hashSync(req.body.password, saltRounds));
+					insert.addParameter('pass', TYPES.VarChar, hashing.hashSync(req.body.password, saltRounds));
 					insert.addParameter('email', TYPES.VarChar, req.body.email);
 					insert.addParameter('first', TYPES.VarChar, req.body.first);
 					insert.addParameter('last', TYPES.VarChar, req.body.last);
@@ -129,9 +129,8 @@ app.post('/login', function(req, res) {
 		if(rowCount !== 1) {
 			res.json({err: 'Invalid username'});
 		} else {
-			console.log(JSON.stringify(rows));
 			var hashedPass = rows[0][1].value;
-			if(!encryption.compareSync(req.body.password, hashedPass)) {
+			if(!hashing.compareSync(req.body.password, hashedPass)) {
 				res.json({err: 'Invalid password'});
 				return;
 			}
