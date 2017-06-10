@@ -5,15 +5,15 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var tedious = require('tedious');
 var session = require('client-sessions');
-var sha512 = require('./js/sha512.js');
+var hashing = require('bcrypt');
 
 var app = express();
 var dbConfig = {
-	userName: 'ryan',
-	password: 'cop4935l!t',
-	server: 'flockit.database.windows.net',
+	userName: process.env.DB_ADMIN,
+	password: process.env.DB_PW,
+	server: process.env.DB_SERVER,
 	options: {
-		database: 'flockit',
+		database: process.env.DB_NAME,
 		encrypt: true,
 		rowCollectionOnRequestCompletion: true
 	}
@@ -35,13 +35,15 @@ app.use(cookieParser());
 app.use(express.static(__dirname));
 app.use(session({
 	cookieName: 'session',
-	secret: sha512.hash(Math.random().toString()),
+	secret: Math.random().toString(),
 	duration: 2147483647,
 	activeDuration: 2147483647
 }));
 
+const saltRounds = 10;
+
 app.get('/', function(req, res) {
-	res.sendFile('index.html');
+	res.sendFile(__dirname + '/index.html');
 });
 
 app.post('/test', function(req, res) {
@@ -55,11 +57,11 @@ app.post('/test', function(req, res) {
 });
 
 app.get('/signup', function(req, res) {
-	res.sendFile(__dirname + '/signup.html');
+	res.sendFile(__dirname + '/public/signup.html');
 });
 
 app.get('/login', function(req, res) {
-	res.sendFile(__dirname + '/login.html');
+	res.sendFile(__dirname + '/public/login.html');
 });
 
 app.post('/signup', function(req, res) {
@@ -95,7 +97,7 @@ app.post('/signup', function(req, res) {
 					});
 					
 					insert.addParameter('user', TYPES.VarChar, req.body.username);
-					insert.addParameter('pass', TYPES.VarChar, req.body.password);
+					insert.addParameter('pass', TYPES.VarChar, hashing.hashSync(req.body.password, saltRounds));
 					insert.addParameter('email', TYPES.VarChar, req.body.email);
 					insert.addParameter('first', TYPES.VarChar, req.body.first);
 					insert.addParameter('last', TYPES.VarChar, req.body.last);
@@ -116,20 +118,24 @@ app.post('/login', function(req, res) {
 	console.log(req.session.user);
 	var TYPES = tedious.TYPES;
 	
-	var checkExists = new tedious.Request('SELECT * FROM [dbo].[User] WHERE username = @user AND passwordHash = @pass', function(err, rowCount, rows) {
+	var checkExists = new tedious.Request('SELECT Id, PasswordHash FROM [dbo].[User] WHERE username = @user', function(err, rowCount, rows) {
 		if(err)
 			throw err;
 		
 		if(rowCount !== 1) {
-			res.json({err: 'Invalid username or password'});
+			res.json({err: 'Invalid username'});
 		} else {
+			var hashedPass = rows[0][1].value;
+			if(!hashing.compareSync(req.body.password, hashedPass)) {
+				res.json({err: 'Invalid password'});
+				return;
+			}
 			req.session.user = rows[0][0].value;
 			res.json({err: null});
 		}
 	});
 	
 	checkExists.addParameter('user', TYPES.VarChar, req.body.username);
-	checkExists.addParameter('pass', TYPES.VarChar, req.body.password);
 	connection.execSql(checkExists);
 });
 
