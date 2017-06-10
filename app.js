@@ -5,6 +5,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var tedious = require('tedious');
 var session = require('client-sessions');
+var sha512 = require('./js/sha512.js');
 
 var app = express();
 var dbConfig = {
@@ -34,7 +35,7 @@ app.use(cookieParser());
 app.use(express.static(__dirname));
 app.use(session({
 	cookieName: 'session',
-	secret: 'asdfasdfasf',
+	secret: sha512.hash(Math.random().toString()),
 	duration: 2147483647,
 	activeDuration: 2147483647
 }));
