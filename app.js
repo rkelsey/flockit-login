@@ -6,6 +6,7 @@ var bodyParser = require('body-parser');
 var tedious = require('tedious');
 var session = require('client-sessions');
 var hashing = require('bcrypt');
+var mail = require('nodemailer');
 
 var app = express();
 var dbConfig = {
@@ -57,11 +58,15 @@ app.post('/test', function(req, res) {
 });
 
 app.get('/signup', function(req, res) {
-	res.sendFile(__dirname + '/public/signup.html');
+	res.sendFile(__dirname + '/signup.html');
 });
 
 app.get('/login', function(req, res) {
-	res.sendFile(__dirname + '/public/login.html');
+	res.sendFile(__dirname + '/login.html');
+});
+
+app.get('/forgotPassword', function(req, res) {
+	res.sendFile(__dirname + '/resetPass.html');
 });
 
 app.post('/signup', function(req, res) {
@@ -137,6 +142,111 @@ app.post('/login', function(req, res) {
 	
 	checkExists.addParameter('user', TYPES.VarChar, req.body.username);
 	connection.execSql(checkExists);
+});
+
+app.post('/forgotPassword', function(req, res) {
+	var ret = {};
+	ret.error = null;
+	
+	var TYPES = tedious.TYPES;
+	
+	var checkEmail = new tedious.Request('SELECT Id, Username FROM [dbo].[User] WHERE [Email] = @email', function(err, rowCount, rows) {
+		if(err)
+			throw err;
+		
+		if(rowCount !== 1) {
+			res.json({err: 'That email is not registered.'});
+		} else {
+			var user = rows[0][0].value;
+			var username = rows[0][1].value;
+			var token = hashing.hashSync(Math.random().toString(), saltRounds);
+			
+			var checkToken = new tedious.Request('SELECT * FROM [dbo].[PasswordReset] WHERE [User] = @user', function(err, rowCount, rows) {
+				if(err)
+					throw err;
+				
+				if(rowCount > 0) {
+					var updateToken = new tedious.Request('UPDATE [dbo].[PasswordReset] SET [Token] = @token, [Expires] = @time WHERE [User] = @user', function(err, rowCount, rows) {
+						if(err)
+							throw err;
+						
+						var url = req.headers.host + '/reset/' + token;
+						var smtpTransport = mail.createTransport({
+							service: 'Gmail',
+							auth: {
+								user: 'ryan.kelsey01@gmail.com',
+								pass: 'Py8evckj5'
+							}
+						});
+						
+						var mailOptions = {
+							to: req.body.email,
+							from: 'passwordreset@flockit.com',
+							subject: 'Flock It Password Reset',
+							text: 'Hello ' + username + ',\nPlease follow this link to reset your Flock It password: ' + url
+						};
+						
+						console.log("hi");
+						smtpTransport.sendMail(mailOptions, function(err) {
+							if(err)
+								throw err;
+							
+							console.log("hi");
+							ret.msg = 'Check ' + email + ' to reset your password. The reset link expires in 30 minutes';
+							res.json(ret);
+							console.log('hi');
+						});
+					});
+					
+					updateToken.addParameter('token', TYPES.VarChar, token);
+					updateToken.addParameter('time', TYPES.DateTime, new Date(Date.now() + 1800000)); //30 minutes
+					updateToken.addParameter('user', TYPES.Int, user);
+					connection.execSql(updateToken);
+				} else {
+					var insertToken = new tedious.Request('INSERT INTO [dbo].[PasswordReset] VALUES(@token, @time, @user)', function(err, rowCount, rows) {
+						if(err)
+							throw err;
+						
+						var url = req.headers.host + '/reset/' + token;
+						var smtpTransport = mail.createTransport({
+							service: 'Gmail',
+							auth: {
+								user: 'ryan.kelsey01@gmail.com',
+								pass: 'Py8evckj5'
+							}
+						});
+						
+						var mailOptions = {
+							to: req.body.email,
+							from: 'passwordreset@flockit.com',
+							subject: 'Flock It Password Reset',
+							text: 'Hello ' + username + ',\nPlease follow this link to reset your Flock It password: ' + url
+						};
+						
+						smtpTransport.sendMail(mailOptions, function(err) {
+							if(err)
+								throw err;
+							
+							ret.msg = 'Check ' + email + ' to reset your password. The reset link expires in 30 minutes';
+							res.json(ret);
+						});
+					});
+					
+					insertToken.addParameter('token', TYPES.VarChar, token);
+					insertToken.addParameter('time', TYPES.DateTime, new Date(Date.now() + 1800000)); //30 minutes
+					insertToken.addParameter('user', TYPES.Int, user);
+					connection.execSql(insertToken);
+				}
+			});
+			
+			checkToken.addParameter('user', TYPES.VarChar, user);
+			connection.execSql(checkToken);
+		}
+	});
+	
+	checkEmail.addParameter('email', TYPES.VarChar, req.body.email);
+	console.log('okay');
+	connection.execSql(checkEmail);
 });
 
 var port = process.env.PORT || 1337;

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			.button {
+				background-color: #4CAF50;
+				border: none;
+				color: white;
+				padding: 15px 32px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+			}
+		</style>
+	</head>
+	<title>Sign In</title>
+	<body>
+		<input id="email" type="text"/>
+		<label for="username">Email</label>
+		
+		<input type="button" class = "button" value="Login" onclick="execute()"/>
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<!-- Compiled and minified JavaScript -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.1/js/materialize.min.js"></script>
+		<script>
+			function execute() {
+				var email = $("#email").val();
+				
+				if(!email || email === "") {
+					alert("The email field must be filled out.");
+					return;
+				}
+				
+				var data = {};
+				data.email = email;
+				
+				$.ajax({
+					url: 'forgotPassword',
+					type: 'POST',
+					data: JSON.stringify(data),
+					contentType: 'application/json; charset=utf-8',
+					dataType: 'json',
+					async: false,
+					success: function (msg) {
+						if(!msg.err) {
+							alert(msg.msg);
+							window.location.replace('/');
+						} else {
+							alert(msg.err);
+						}
+					},
+					error: function(err){
+						alert("COMPLETE FAILRUE");
+					}
+				});
+			}
+			
+			function anyEmpty(arr) {
+				console.log(arr);
+				for(var i = 0; i < arr.length; i++) {
+					console.log(arr[i]);
+					if(!arr[i] || arr[i] === "")
+						return true;
+				}
+				return false;
+			}
+			
+		</script>
+	</body>
+</html>
