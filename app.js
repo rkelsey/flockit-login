@@ -177,8 +177,8 @@ app.post('/forgotPassword', function(req, res) {
 						var smtpTransport = mail.createTransport({
 							service: 'SendGrid',
 							auth: {
-								user: 'azure_14fba0638b6698e277de1bdb722adc35@azure.com',
-								pass: 'cop4935l!t'
+								user: 'null'
+								pass: 'null'
 							}
 						});
 						
@@ -215,8 +215,8 @@ app.post('/forgotPassword', function(req, res) {
 						var smtpTransport = mail.createTransport({
 							service: 'SendGrid',
 							auth: {
-								user: 'azure_14fba0638b6698e277de1bdb722adc35@azure.com',
-								pass: 'cop4935l!t'
+								user: 'null'
+								pass: 'null'
 							}
 						});
 						
