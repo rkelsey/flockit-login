@@ -177,8 +177,8 @@ app.post('/forgotPassword', function(req, res) {
 						var smtpTransport = mail.createTransport({
 							service: 'SendGrid',
 							auth: {
-								user: 'null'
-								pass: 'null'
+								user: process.env.MAIL_AUTH_USER,
+								pass: process.env.MAIL_AUTH_PW
 							}
 						});
 						
@@ -215,8 +215,8 @@ app.post('/forgotPassword', function(req, res) {
 						var smtpTransport = mail.createTransport({
 							service: 'SendGrid',
 							auth: {
-								user: 'null'
-								pass: 'null'
+								user: process.env.MAIL_AUTH_USER,
+								pass: process.env.MAIL_AUTH_PW
 							}
 						});
 						
