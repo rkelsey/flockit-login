@@ -16,30 +16,42 @@
 			}
 		</style>
 	</head>
-	<title>Sign In</title>
+	<title>Reset Password</title>
 	<body>
-		<input id="email" type="text"/>
-		<label for="username">Email</label>
+		<p id="username">[INSERT USERNAME HERE]</p>
+		<br>
+		<input id="password" type="password"/>
+		<label for="password">Password</label>
+		<br>
+		<input id="confirm" type="password"/>
+		<label for="confirm">Confirm Password</label>
 		<br>
 		
-		<input type="button" class = "button" value="Send Password Reset Email" onclick="execute()"/>
+		<input type="button" class = "button" value="Change Password" onclick="execute()"/>
 		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
 		<!-- Compiled and minified JavaScript -->
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.1/js/materialize.min.js"></script>
 		<script>
 			function execute() {
-				var email = $("#email").val();
+				var username = document.getElementById("username").innerHTML;
+				var pass = $("#password").val();
+				var confirm = $("#confirm").val();
 				
-				if(!email || email === "") {
-					alert("The email field must be filled out.");
+				var arr = [confirm, pass];
+				if(anyEmpty(arr)) {
+					alert("All fields must be filled in!");
+					return;
+				} else if(pass !== confirm) {
+					alert("Passwords do not match!");
 					return;
 				}
 				
 				var data = {};
-				data.email = email;
+				data.username = username;
+				data.password = pass;
 				
 				$.ajax({
-					url: 'forgotPassword',
+					url: '../resetPassword',
 					type: 'POST',
 					data: JSON.stringify(data),
 					contentType: 'application/json; charset=utf-8',
@@ -47,7 +59,7 @@
 					async: false,
 					success: function (msg) {
 						if(!msg.err) {
-							alert(msg.msg);
+							alert("Your password was reset :)");
 							window.location.replace('/');
 						} else {
 							alert(msg.err);

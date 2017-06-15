@@ -7,6 +7,7 @@ var tedious = require('tedious');
 var session = require('client-sessions');
 var hashing = require('bcrypt');
 var mail = require('nodemailer');
+var fs = require('fs');
 
 var app = express();
 var dbConfig = {
@@ -144,6 +145,8 @@ app.post('/login', function(req, res) {
 	connection.execSql(checkExists);
 });
 
+//TODO: Clean this shit up
+//Also, fuck Node, fuck JavaScript, fuck all this asynchronous bullshit
 app.post('/forgotPassword', function(req, res) {
 	var ret = {};
 	ret.error = null;
@@ -159,7 +162,7 @@ app.post('/forgotPassword', function(req, res) {
 		} else {
 			var user = rows[0][0].value;
 			var username = rows[0][1].value;
-			var token = hashing.hashSync(Math.random().toString(), saltRounds);
+			var token = (parseInt(Math.random() * 1000000000)).toString() + (parseInt(Math.random() * 1000000000)).toString();
 			
 			var checkToken = new tedious.Request('SELECT * FROM [dbo].[PasswordReset] WHERE [User] = @user', function(err, rowCount, rows) {
 				if(err)
@@ -172,10 +175,10 @@ app.post('/forgotPassword', function(req, res) {
 						
 						var url = req.headers.host + '/reset/' + token;
 						var smtpTransport = mail.createTransport({
-							service: 'Gmail',
+							service: 'SendGrid',
 							auth: {
-								user: 'ryan.kelsey01@gmail.com',
-								pass: 'no'
+								user: 'azure_14fba0638b6698e277de1bdb722adc35@azure.com',
+								pass: 'cop4935l!t'
 							}
 						});
 						
@@ -183,18 +186,19 @@ app.post('/forgotPassword', function(req, res) {
 							to: req.body.email,
 							from: 'passwordreset@flockit.com',
 							subject: 'Flock It Password Reset',
-							text: 'Hello ' + username + ',\nPlease follow this link to reset your Flock It password: ' + url
+							text: 'Hello ' + username.trim() + ',\nPlease follow this link to reset your Flock It password: ' + url
 						};
 						
-						console.log("hi");
+						console.log("hi1");
 						smtpTransport.sendMail(mailOptions, function(err) {
 							if(err)
 								throw err;
 							
-							console.log("hi");
-							ret.msg = 'Check ' + email + ' to reset your password. The reset link expires in 30 minutes';
+							console.log("hi2");
+							ret.msg = 'Check ' + req.body.email + ' to reset your password. The reset link expires in 30 minutes';
+							console.log("hi3");
 							res.json(ret);
-							console.log('hi');
+							console.log('hi4');
 						});
 					});
 					
@@ -209,10 +213,10 @@ app.post('/forgotPassword', function(req, res) {
 						
 						var url = req.headers.host + '/reset/' + token;
 						var smtpTransport = mail.createTransport({
-							service: 'Gmail',
+							service: 'SendGrid',
 							auth: {
-								user: 'ryan.kelsey01@gmail.com',
-								pass: 'no'
+								user: 'azure_14fba0638b6698e277de1bdb722adc35@azure.com',
+								pass: 'cop4935l!t'
 							}
 						});
 						
@@ -220,15 +224,19 @@ app.post('/forgotPassword', function(req, res) {
 							to: req.body.email,
 							from: 'passwordreset@flockit.com',
 							subject: 'Flock It Password Reset',
-							text: 'Hello ' + username + ',\nPlease follow this link to reset your Flock It password: ' + url
+							text: 'Hello ' + username.trim() + ',\nPlease follow this link to reset your Flock It password: ' + url
 						};
 						
+						console.log("hi1");
 						smtpTransport.sendMail(mailOptions, function(err) {
 							if(err)
 								throw err;
 							
-							ret.msg = 'Check ' + email + ' to reset your password. The reset link expires in 30 minutes';
+							console.log("hi2");
+							ret.msg = 'Check ' + req.body.email + ' to reset your password. The reset link expires in 30 minutes';
+							console.log("hi3");
 							res.json(ret);
+							console.log('hi4');
 						});
 					});
 					
@@ -247,6 +255,74 @@ app.post('/forgotPassword', function(req, res) {
 	checkEmail.addParameter('email', TYPES.VarChar, req.body.email);
 	console.log('okay');
 	connection.execSql(checkEmail);
+});
+
+app.get('/reset/:token', function(req, res) {
+	console.log(req.params.token);
+	
+	var TYPES = tedious.TYPES;
+	var checkToken = new tedious.Request('SELECT [User], [Expires] FROM [dbo].[PasswordReset] WHERE [Token] = @token', function(err, rowCount, rows) {
+		if(err)
+			throw err;
+		
+		if(rowCount !== 1) {
+			console.log("uh oh...");
+			return;
+		}
+		
+		var user = rows[0][0].value;
+		var expires = rows[0][1].value;
+		
+		console.log(user);
+		
+		if(new Date(expires) < Date.now()) {
+			var data = "This password reset token has expired. Please reset your password again.";
+			res.writeHead(200, {'Content-Type': 'text/html','Content-Length':data.length});
+			res.write(data);
+			res.end();
+		} else {
+			var getUsername = new tedious.Request('SELECT [Username] FROM [dbo].[User] WHERE [Id] = @user', function(err, rowCount, rows) {
+				if(err)
+					throw err;
+				
+				if(rowCount !== 1) {
+					console.log("uh oh...");
+					return;
+				}
+				
+				var username = rows[0][0].value;
+				fs.readFile('resetPass2.html',function (err, data) {
+					if(err)
+						throw err;
+					
+					data = data.toString().replace('[INSERT USERNAME HERE]', rows[0][0].value);
+					res.writeHead(200, {'Content-Type': 'text/html','Content-Length':data.length});
+					res.write(data);
+					res.end();
+				});
+			});
+			
+			getUsername.addParameter('user', TYPES.Int, user);
+			connection.execSql(getUsername);
+		}
+	});
+	
+	checkToken.addParameter('token', TYPES.VarChar, req.params.token);
+	connection.execSql(checkToken);
+});
+
+app.post('/resetPassword', function(req, res) {
+	var update = new tedious.Request('UPDATE [dbo].[User] SET PasswordHash = @hash WHERE Username = @user', function(err, rowCount, rows) {
+		if(err)
+			throw err;
+		
+		res.json({});
+	});
+	
+	var TYPES = tedious.TYPES;
+	update.addParameter('user', TYPES.VarChar, req.body.username);
+	update.addParameter('hash', TYPES.VarChar, hashing.hashSync(req.body.password, saltRounds));
+	connection.execSql(update);
 });
 
 var port = process.env.PORT || 1337;
