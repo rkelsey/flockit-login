@@ -369,7 +369,7 @@ app.post('/upload', function(req, res) {
 			
 			var totalSize = rows[0][0].value;
 			
-			if(totalSize + audio.size > userStorageLimit) {
+			if(parseInt(totalSize) + audio.size > userStorageLimit) {
 				res.json({err: 'Uploading this file would exceed your storage limit'});
 				return;
 			}
