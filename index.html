@@ -24,5 +24,70 @@
 		<a href="/login" class="button">Login</a>
 		<br>
 		<a href="/forgotPassword" class="button">Forgot Password?</a>
+		<br>
+		
+		<ul id="list">
+		</ul>
 	</body>
+	
+	<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<!-- Compiled and minified JavaScript -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.1/js/materialize.min.js"></script>
+		<script>
+			$(document).ready(function() {
+				$.ajax({
+					url: 'uploadedFiles',
+					type: 'GET',
+					contentType: 'application/json; charset=utf-8',
+					dataType: 'json',
+					async: true,
+					success: function (tracks) {
+						var ul = document.getElementById("list");
+						for(var i = 0; i < tracks.length; i++) {
+							alert(JSON.stringify(tracks[i]));
+							var li = "<a href='" + tracks[i].url + "'>" + tracks[i].title + " by " + tracks[i].artist + " from " + tracks[i].album + "</a>"
+							ul.innerHTML += "<li>" + li + "</li>";
+						}
+					},
+					error: function(err){
+						alert("COMPLETE FAILRUE");
+					}
+				});
+			})
+			
+			function execute() {
+				var user = $("#username").val();
+				var pass = $("#password").val();
+				
+				var arr = [user, pass];
+				if(anyEmpty(arr)) {
+					alert("All fields must be filled in!");
+					return;
+				}
+				
+				var data = {};
+				data.username = user;
+				data.password = pass;
+				
+				$.ajax({
+					url: 'login',
+					type: 'POST',
+					data: JSON.stringify(data),
+					contentType: 'application/json; charset=utf-8',
+					dataType: 'json',
+					async: false,
+					success: function (msg) {
+						if(!msg.err) {
+							alert("You successfully logged in :)");
+							window.location.replace('/');
+						} else {
+							alert(msg.err);
+						}
+					},
+					error: function(err){
+						alert("COMPLETE FAILRUE");
+					}
+				});
+			}
+		</script>
 </html>

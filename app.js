@@ -8,6 +8,8 @@ var session = require('client-sessions');
 var hashing = require('bcrypt');
 var mail = require('nodemailer');
 var fs = require('fs');
+var formidable = require('formidable');
+var id3 = require('node-id3');
 
 var app = express();
 var dbConfig = {
@@ -43,6 +45,7 @@ app.use(session({
 }));
 
 const saltRounds = 10;
+const userStorageLimit = 1e8;
 
 app.get('/', function(req, res) {
 	res.sendFile(__dirname + '/index.html');
@@ -71,7 +74,6 @@ app.get('/forgotPassword', function(req, res) {
 });
 
 app.post('/signup', function(req, res) {
-	console.log(JSON.stringify(req.body));
 	var ret = {};
 	ret.error = null;
 	
@@ -121,7 +123,6 @@ app.post('/signup', function(req, res) {
 });
 
 app.post('/login', function(req, res) {
-	console.log(req.session.user);
 	var TYPES = tedious.TYPES;
 	
 	var checkExists = new tedious.Request('SELECT Id, PasswordHash FROM [dbo].[User] WHERE username = @user', function(err, rowCount, rows) {
@@ -258,8 +259,6 @@ app.post('/forgotPassword', function(req, res) {
 });
 
 app.get('/reset/:token', function(req, res) {
-	console.log(req.params.token);
-	
 	var TYPES = tedious.TYPES;
 	var checkToken = new tedious.Request('SELECT [User], [Expires] FROM [dbo].[PasswordReset] WHERE [Token] = @token', function(err, rowCount, rows) {
 		if(err)
@@ -323,6 +322,113 @@ app.post('/resetPassword', function(req, res) {
 	update.addParameter('user', TYPES.VarChar, req.body.username);
 	update.addParameter('hash', TYPES.VarChar, hashing.hashSync(req.body.password, saltRounds));
 	connection.execSql(update);
+});
+
+app.get('/upload', function(req, res) {
+	if(!req.session.user)
+		res.sendFile(__dirname + '/index.html');
+	else
+		res.sendFile(__dirname + '/upload.html');
+});
+
+app.post('/upload', function(req, res) {
+	if(!req.session.user)
+		return;
+	
+	console.log("wtf");
+	
+	try {
+		fs.accessSync(path.join(__dirname, 'uploads'));
+	} catch(e) {
+		fs.mkdirSync(path.join(__dirname, 'uploads'));
+	}
+	
+	try {
+		fs.accessSync(path.join(__dirname, 'uploads', req.session.user.toString()));
+	} catch(e) {
+		fs.mkdirSync(path.join(__dirname, 'uploads', req.session.user.toString()));
+	}
+	
+	var newPath = path.join(__dirname, 'uploads', req.session.user.toString(), parseInt(1000000 * Math.random()).toString() + '.mp3');
+	var form = new formidable.IncomingForm();
+	
+	form.parse(req, function(err, fields, files) {
+		console.log(JSON.stringify(fields));
+		console.log(JSON.stringify(files));
+		
+		var title = fields.title;
+		var artist = fields.artist;
+		var album = fields.album;
+		var audio = files.audioFile;
+		
+		var TYPES = tedious.TYPES;
+		var checkUploadSize = new tedious.Request('SELECT SUM(FileSize) FROM [dbo].[Song] WHERE Owner = @owner', function(err, rowCount, rows) {
+			if(err)
+				throw err;
+			
+			var totalSize = rows[0][0].value;
+			
+			if(totalSize + audio.size > userStorageLimit) {
+				res.json({err: 'Uploading this file would exceed your storage limit'});
+				return;
+			}
+			
+			var logAudio = new tedious.Request('INSERT INTO [dbo].[Song] ([Url], [Owner], [Source], [Title], [Artist], [Album], [FileSize]) VALUES(@url, @owner, \'Azure\', @title, @artist, @album, @size)', function(err, rowCount, rows) {
+				if(err)
+					throw err;
+				
+				res.json({err: null});
+			});
+			logAudio.addParameter('owner', TYPES.Int, req.session.user);
+			logAudio.addParameter('url', TYPES.VarChar, newPath);
+			logAudio.addParameter('title', TYPES.VarChar, title);
+			logAudio.addParameter('artist', TYPES.VarChar, artist);
+			logAudio.addParameter('album', TYPES.VarChar, album);
+			logAudio.addParameter('size', TYPES.Int, audio.size);
+			connection.execSql(logAudio);
+		});
+		
+		checkUploadSize.addParameter('owner', TYPES.Int, req.session.user);
+		connection.execSql(checkUploadSize);
+	});
+	
+	form.on('fileBegin', function(name, file) {
+		file.path = newPath;
+	});
+});
+
+app.get('/uploadedFiles', function(req, res) {
+	var tracks = [];
+	if(!req.session.user) {
+		res.json(tracks);
+		return;
+	}
+	
+	var uploaded = new tedious.Request('SELECT * FROM [dbo].[Song] WHERE [Owner] = @owner AND [Source] = \'Azure\'', function(err, rowCount, rows) {
+		if(err)
+			throw err;
+		
+		for(var i = 0; i < rowCount; i++) {
+			tracks.push({url: rows[i][1].value, title: rows[i][4].value.trim(), artist: rows[i][5].value.trim(), album: rows[i][6].value.trim()});
+		}
+		console.log(JSON.stringify(tracks));
+		res.json(tracks);
+	});
+	
+	uploaded.addParameter('owner', tedious.TYPES.Int, req.session.user);
+	connection.execSql(uploaded);
+});
+
+app.post('/getTrackData', function(req, res) {
+	var form = new formidable.IncomingForm();
+	
+	form.parse(req, function(err, fields, files) {
+		if(err)
+			throw err;
+		
+		var tags = id3.read(files.audioFile.path);
+		res.json({err: null, title: tags.title, artist: tags.artist, album: tags.album});
+	});
 });
 
 var port = process.env.PORT || 1337;

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			.button {
+				background-color: #4CAF50;
+				border: none;
+				color: white;
+				padding: 15px 32px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+			}
+		</style>
+		<title>Upload</title>
+	</head>
+	<body>
+		<input id="title" type="text"/>
+		<label for="title">Song Title</label>
+		<br>
+		<input id="artist" type="text"/>
+		<label for="artist">Artist</label>
+		<br>
+		<input id="album" type="text"/>
+		<label for="album">Album</label>
+		<br>
+		<input id="song" type="file" accept=".mp3">
+		<label for="song">Audio</label>
+		<br>
+		
+		<input type="button" class="button" value="Get Track Data (from ID3 tags)" onclick="getTrackData()" />
+		<br>
+		<input type="button" class = "button" value="Upload!" onclick="execute()"/>
+		
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<!-- Compiled and minified JavaScript -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.1/js/materialize.min.js"></script>
+		<script>
+			function execute() {
+				var title = $("#title").val();
+				var artist = $("#artist").val();
+				var album = $("#album").val();
+				
+				var files = document.getElementById("song").files;
+				if(!files || !files[0]) {
+					alert("No file chosen");
+					return;
+				}
+				
+				var formData = new FormData();
+				formData.append("title", title);
+				formData.append("artist", artist);
+				formData.append("album", album);
+				formData.append("audioFile", files[0]);
+				
+				$.ajax({
+					url: 'upload',
+					type: 'POST',
+					processData: false,
+					contentType: false,
+					data: formData,
+					dataType: 'json',
+					async: false,
+					success: function (msg) {
+						if(!msg.err) {
+							alert("You successfully uploaded your audio file :)");
+							window.location.replace('/');
+						} else {
+							alert(msg.err);
+						}
+					},
+					error: function(err){
+						alert("COMPLETE FAILRUE");
+					}
+				});
+			}
+			
+			function getTrackData() {
+				var files = document.getElementById("song").files;
+				
+				if(!files || !files[0]) {
+					alert("No file chosen");
+					return;
+				}
+				
+				var formData = new FormData();
+				formData.append("audioFile", files[0]);
+				
+				$.ajax({
+					url: 'getTrackData',
+					type: 'POST',
+					processData: false,
+					contentType: false,
+					data: formData,
+					dataType: 'json',
+					async: false,
+					success: function (msg) {
+						if(!msg.err) {
+							document.getElementById("title").value = msg.title;
+							document.getElementById("artist").value = msg.artist;
+							document.getElementById("album").value = msg.album;
+						} else {
+							alert(msg.err);
+						}
+					},
+					error: function(err){
+						alert("COMPLETE FAILRUE");
+					}
+				})
+			};
+		</script>
+	</body>
+</html>
