@@ -349,7 +349,8 @@ app.post('/upload', function(req, res) {
 		fs.mkdirSync(path.join(__dirname, 'uploads', req.session.user.toString()));
 	}
 	
-	var newPath = path.join(__dirname, 'uploads', req.session.user.toString(), parseInt(1000000 * Math.random()).toString() + '.mp3');
+	var mp3 = parseInt(1000000 * Math.random()).toString() + '.mp3';
+	var newPath = path.join(__dirname, 'uploads', req.session.user.toString(), mp3);
 	var form = new formidable.IncomingForm();
 	
 	form.parse(req, function(err, fields, files) {
@@ -380,7 +381,7 @@ app.post('/upload', function(req, res) {
 				res.json({err: null});
 			});
 			logAudio.addParameter('owner', TYPES.Int, req.session.user);
-			logAudio.addParameter('url', TYPES.VarChar, newPath);
+			logAudio.addParameter('url', TYPES.VarChar, 'http://flockit-login.azurewebsites.net/uploads/' + req.session.user.toString() + '/' + mp3);
 			logAudio.addParameter('title', TYPES.VarChar, title);
 			logAudio.addParameter('artist', TYPES.VarChar, artist);
 			logAudio.addParameter('album', TYPES.VarChar, album);
